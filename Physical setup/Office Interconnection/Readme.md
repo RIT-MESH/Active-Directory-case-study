@@ -170,59 +170,6 @@ To centralize DHCP service and avoid conflicts between Tokyo and Osaka:
 
 ---
 
-**Office Interconnection: Connecting Tokyo Office to Osaka Office for Centralized Access (Detailed Guide)**
-
-This comprehensive section outlines the complete step-by-step approach to securely connect the Osaka office to the Tokyo office network. This setup ensures that the Osaka site becomes an extension of the Tokyo network, giving Osaka users full access to Tokyo's Active Directory (AD) services, shared resources, printers, and VoIP infrastructure.
-
----
-
-## Objective:
-- Interconnect Tokyo and Osaka offices using a secure site-to-site VPN.
-- Allow Osaka users full, seamless access to all services hosted in Tokyo.
-- Maintain network segmentation using VLANs and strict firewall policies.
-
----
-
-## VLAN Layout (Common for Tokyo and Osaka Offices)
-To maintain a consistent structure and enable secure traffic control, **both offices use the following VLAN segmentation**:
-
-- **VLAN 10**: IT Department (computers and printer) – `192.168.10.0/24`
-- **VLAN 20**: HR Department (computers and printer) – `192.168.20.0/24`
-- **VLAN 30**: Sales Department (computers and printer) – `192.168.30.0/24`
-- **VLAN 40**: Production Department (computers and printer) – `192.168.40.0/24`
-- **VLAN 50**: VoIP Phones – `192.168.50.0/24`
-- **VLAN 60**: Servers (e.g., AD Domain Controller, File Servers, RODC) – `192.168.60.0/24`
-
-> This VLAN design is implemented in **both Tokyo and Osaka offices** to allow seamless integration, simplified routing, centralized access control, and standardized GPO deployment.
-
----
-
-**Office Interconnection: Connecting Tokyo Office to Osaka Office for Centralized Access (Detailed Guide)**
-
-This comprehensive section outlines the complete step-by-step approach to securely connect the Osaka office to the Tokyo office network. This setup ensures that the Osaka site becomes an extension of the Tokyo network, giving Osaka users full access to Tokyo's Active Directory (AD) services, shared resources, printers, and VoIP infrastructure.
-
----
-
-## Objective:
-- Interconnect Tokyo and Osaka offices using a secure site-to-site VPN.
-- Allow Osaka users full, seamless access to all services hosted in Tokyo.
-- Maintain network segmentation using VLANs and strict firewall policies.
-
----
-
-## VLAN Layout (Common for Tokyo and Osaka Offices)
-To maintain a consistent structure and enable secure traffic control, **both offices use the following VLAN segmentation**:
-
-- **VLAN 10**: IT Department (computers and printer) – `192.168.10.0/24`
-- **VLAN 20**: HR Department (computers and printer) – `192.168.20.0/24`
-- **VLAN 30**: Sales Department (computers and printer) – `192.168.30.0/24`
-- **VLAN 40**: Production Department (computers and printer) – `192.168.40.0/24`
-- **VLAN 50**: VoIP Phones – `192.168.50.0/24`
-- **VLAN 60**: Servers (e.g., AD Domain Controller, File Servers, RODC) – `192.168.60.0/24`
-
-> This VLAN design is implemented in **both Tokyo and Osaka offices** to allow seamless integration, simplified routing, centralized access control, and standardized GPO deployment.
-
----
 
 ## Step 9: Router ACL Configuration (Tokyo and Osaka)
 
@@ -288,9 +235,15 @@ interface vlan 50
 
 ---
 
-## Step 10: pfSense Firewall Rules, NAT, and Inter-VLAN ACL Logic
+...
 
-### **Theory: pfSense as a Firewall and VLAN Gateway**
+Would you like me to generate mock screenshots or help you prepare this as a step-by-step PDF guide with images?
+
+---
+
+## Step 10: pfSense Firewall Rules, NAT, Inter-VLAN ACL Logic & Web GUI Walkthrough
+
+### **10.1: Theory – pfSense as a Firewall and VLAN Gateway**
 pfSense is a powerful open-source firewall and router platform used in both SMB and enterprise environments. It allows deep control over traffic between networks (e.g., VLANs), including:
 - Stateful packet inspection
 - NAT policies
@@ -301,66 +254,109 @@ Unlike router ACLs, pfSense uses a GUI with top-down rule processing per interfa
 
 ---
 
-### **10.1: pfSense Inter-VLAN Firewall Rules**
-In pfSense, each VLAN interface has its own firewall tab. Define rules per interface.
-
-#### **IT VLAN (VLAN 10) – Allow Full Access**
-- Interface: VLAN 10
-- Rule:
-  - Action: Pass
-  - Source: `192.168.10.0/24`
-  - Destination: `any`
-
-#### **HR, Sales, Production VLANs – Allow to VLAN 60 Only**
-- Interface: VLAN 20, 30, 40
-- Rule:
-  - Action: Pass
-  - Source: Corresponding VLAN subnet (e.g., `192.168.20.0/24`)
-  - Destination: `192.168.60.0/24`
-
-#### **Block Interdepartmental Access**
-- Add **block rules** above the allow rules for each interface:
-  - Source: e.g., `192.168.20.0/24`
-  - Destination: `192.168.30.0/24`, `192.168.40.0/24`
-
-> 📌 **Tip**: pfSense rules are evaluated top-down. Place block rules above allow rules.
+### **10.2: Access pfSense Web GUI**
+- Open a web browser.
+- Navigate to `https://<pfSense_IP_Address>` (e.g., `https://192.168.60.1`).
+- Log in with your admin credentials.
 
 ---
 
-### **10.2: NAT Exceptions**
-
-### **Theory: NAT in Inter-VLAN Communication**
-By default, NAT (Network Address Translation) is used to allow private IP addresses to access the internet. However, NAT should not be applied between internal VLANs since it hides the true source IP, breaks security policies, and complicates logging.
-
-#### **Configure NAT Exceptions in pfSense**
-- Go to **Firewall > NAT > Outbound**
-- Set mode to **Hybrid** or **Manual**
-- Add rules to **disable NAT** between VLANs:
-  - Source: `192.168.0.0/16`
-  - Destination: `192.168.0.0/16`
-  - Translation: `Do not NAT`
-
----
-
-### **10.3: SIP/VoIP Considerations**
-
-#### **Theory: VoIP & NAT Challenges**
-VoIP protocols like SIP and RTP dynamically assign ports, which can be disrupted by NAT (port rewriting). To avoid dropped calls or one-way audio:
-
-#### **Best Practices in pfSense**
-- Enable **Static Port NAT** for VoIP VLAN to avoid port rewriting
-- Enable **SIP ALG (Application Layer Gateway)** only if required by your VoIP provider
+### **10.3: Create VLAN Interfaces**
+1. Go to **Interfaces > Assignments**.
+2. Click the **"VLANs"** tab.
+3. Click **"Add"**:
+   - Parent Interface: LAN (usually `em0`, `igb0`, etc.)
+   - VLAN Tag: `10`, `20`, `30`, etc.
+   - VLAN Priority: Leave blank
+4. Repeat for all VLANs (10 to 60).
+5. Return to **Interfaces > Assignments**, and click **"+Add"** for each VLAN interface.
+6. Enable each interface, name it (`IT`, `HR`, etc.), and assign a static IP:
+   - Example: `192.168.10.1/24` for VLAN 10
 
 ---
 
-### **10.4: Logging and Testing**
+### **10.4: Configure DHCP for Each VLAN**
+1. Go to **Services > DHCP Server**.
+2. Choose each VLAN interface tab.
+3. Enable DHCP and define:
+   - Range: e.g., `192.168.10.100` to `192.168.10.200`
+   - Gateway: `192.168.10.1`
+   - DNS: `192.168.60.10` (Tokyo AD server)
 
-- Enable logging on **block rules** to audit denied traffic
-- Use **Diagnostics > Packet Capture** in pfSense to inspect live traffic flow
-- Review logs in **Status > System Logs > Firewall** to fine-tune rules
+---
 
-Let me know if you’d like a web GUI walkthrough for pfSense setup or example screenshots!
+### **10.5: Define Inter-VLAN Firewall Rules**
+1. Go to **Firewall > Rules**.
+2. Select the VLAN interface (e.g., HR).
+3. Click **"Add"** (position: top).
+   - Action: Block
+   - Source: `192.168.20.0/24`
+   - Destination: `192.168.30.0/24`, then create another for `192.168.40.0/24`
+4. Click **"Add"** again to create ALLOW rule:
+   - Source: `192.168.20.0/24`
+   - Destination: `192.168.60.0/24`
+5. Repeat similar logic for VLANs 30 and 40.
+6. For VLAN 10 (IT), add a single rule:
+   - Source: `192.168.10.0/24`
+   - Destination: `any`
 
+---
+
+### **10.6: NAT Configuration (Hybrid Mode)**
+1. Navigate to **Firewall > NAT > Outbound**.
+2. Set mode to **Hybrid Outbound NAT**.
+3. Click **"Add"**:
+   - Interface: LAN
+   - Source: `192.168.0.0/16`
+   - Destination: `192.168.0.0/16`
+   - Translation: Leave blank (will auto fill with interface address)
+   - Check **Static Port** if for VoIP
+
+---
+
+### **10.7: SIP/VoIP Considerations**
+
+#### **Understanding the Challenges**
+VoIP traffic, particularly SIP and RTP, can be sensitive to NAT and firewall configurations. Incorrect handling leads to issues like one-way audio, dropped calls, or phones failing to register with the SIP server.
+
+#### **Best Practices for VoIP with pfSense:**
+1. **Use Static Port NAT**:
+   - For the VoIP VLAN, enable Static Port NAT to preserve original port numbers, especially for RTP traffic.
+   - Go to **Firewall > NAT > Outbound**, edit the rule for VoIP VLAN, and check **Static Port**.
+
+2. **Disable SIP ALG (if enabled):**
+   - Some VoIP providers recommend disabling SIP ALG as it may interfere with call setup.
+   - Navigate to **System > Advanced > Firewall & NAT**, then uncheck "Enable SIP ALG".
+
+3. **Allow Required Ports in Firewall:**
+   - SIP: UDP 5060
+   - RTP: UDP 10000–20000 (customizable based on provider)
+   - On VLAN 50 (VoIP), add firewall rules to allow outgoing traffic to VLAN 60 (where the SIP server resides).
+
+4. **QoS (Optional but Recommended):**
+   - Prioritize VoIP traffic using Traffic Shaping or Limiters to ensure call quality.
+
+5. **Monitor with Packet Capture:**
+   - Use **Diagnostics > Packet Capture** to analyze VoIP packet flow if troubleshooting is required.
+
+---
+
+### **10.8: Logging and Diagnostics**
+- To **log blocked connections**:
+   - On each block rule, check "Log packets matched by this rule."
+- Use **Diagnostics > Packet Capture** for live troubleshooting.
+- View logs in **Status > System Logs > Firewall**.
+
+---
+
+### 📸 **10.9: Screenshots to Include (Suggested)**
+- VLAN creation interface
+- Firewall rules per VLAN
+- NAT outbound rule screen
+- SIP/VoIP static port NAT rule
+- SIP ALG disable toggle
+- Packet capture tool
+- Interface assignments screen
 
 
 
@@ -373,5 +369,5 @@ Let me know if you’d like a web GUI walkthrough for pfSense setup or example s
 - **IT in Osaka** has full administrative access across both networks
 - **Switch port mapping and DHCP relay setup** ensure scalability and centralized management
 
-Let me know if you’d like VLAN-aware DNS conditional forwarding or router ACLs next!
+
 
