@@ -170,7 +170,7 @@ This setup ensures:
 By following these steps, your organization will have a secure, scalable, and efficient AD environment tailored to its departmental structure.
 
 
-Below are 20 additional scenarios to enhance your existing Windows Server Active Directory (AD) setup for a company with multiple departments. These scenarios build on a typical AD environment and cover diverse aspects such as user management, security, automation, compliance, and integration with modern technologies. Each scenario includes an objective and actionable steps to implement it, ensuring a comprehensive and robust AD infrastructure.
+Below are 25 additional scenarios to enhance your existing Windows Server Active Directory (AD) setup for a company with multiple departments. These scenarios build on a typical AD environment and cover diverse aspects such as user management, security, automation, compliance, and integration with modern technologies. Each scenario includes an objective and actionable steps to implement it, ensuring a comprehensive and robust AD infrastructure.
 
 ---
 
